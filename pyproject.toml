@@ -1,0 +1,23 @@
+[project]
+name = "orchestrator"
+version = "0.1.0"
+description = "Discord bot that turns a server into a project-management community"
+requires-python = ">=3.12"
+dependencies = [
+    "discord.py>=2.4,<3",
+    "asyncpg>=0.29",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+]
+
+[tool.setuptools]
+packages = ["bot"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
