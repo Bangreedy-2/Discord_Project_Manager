@@ -2,32 +2,47 @@ import logging
 
 import asyncpg
 import discord
+from discord import app_commands
 from discord.ext import commands
 
 from bot.config import Settings, load_settings
 from bot.db.pool import create_pool
 from bot.db.repos import Repos
+from bot.errors import OrchestratorError
+from bot.services.container import Services
 
 log = logging.getLogger("orchestrator")
 
+EXTENSIONS = (
+    "bot.cogs.projects",
+)
+
 
 class Orchestrator(commands.Bot):
+    pool: asyncpg.Pool
+    repos: Repos
+    services: Services
+
     def __init__(self, settings: Settings):
         intents = discord.Intents.default()
+        # Needed to list role holders in /project info and to repair state on startup.
+        intents.members = True
         super().__init__(command_prefix=commands.when_mentioned, intents=intents)
         self.settings = settings
-        self.pool: asyncpg.Pool | None = None
-        self.repos: Repos | None = None
+        self.tree.on_error = self.on_app_command_error
 
     async def setup_hook(self) -> None:
         self.pool = await create_pool(self.settings.database_url)
         self.repos = Repos.from_pool(self.pool)
+        self.services = Services.build(self.repos)
         log.info("database pool ready")
+        for ext in EXTENSIONS:
+            await self.load_extension(ext)
         await self._sync_commands()
 
     async def close(self) -> None:
         await super().close()
-        if self.pool is not None:
+        if getattr(self, "pool", None) is not None:
             await self.pool.close()
 
     async def _sync_commands(self) -> None:
@@ -42,6 +57,38 @@ class Orchestrator(commands.Bot):
 
     async def on_ready(self) -> None:
         log.info("logged in as %s (%s)", self.user, self.user.id if self.user else "?")
+
+    async def on_app_command_error(
+        self, interaction: discord.Interaction, error: app_commands.AppCommandError
+    ) -> None:
+        original = getattr(error, "original", error)
+        if isinstance(original, OrchestratorError):
+            message = original.message
+        elif isinstance(error, app_commands.CommandOnCooldown):
+            message = f"Slow down! Try again in {error.retry_after:.0f} s."
+        elif isinstance(error, app_commands.NoPrivateMessage):
+            message = "This command only works inside a server."
+        elif isinstance(error, app_commands.CheckFailure):
+            message = "You can't use this command."
+        elif isinstance(original, discord.Forbidden):
+            message = (
+                "I'm missing a Discord permission for that. Make sure my role has Manage Roles "
+                "and Manage Channels and sits above the project roles."
+            )
+        else:
+            log.exception(
+                "unhandled error in /%s",
+                interaction.command.qualified_name if interaction.command else "?",
+                exc_info=original,
+            )
+            message = "Something went wrong. The error has been logged."
+        try:
+            if interaction.response.is_done():
+                await interaction.followup.send(message, ephemeral=True)
+            else:
+                await interaction.response.send_message(message, ephemeral=True)
+        except discord.HTTPException:
+            log.warning("could not deliver error message to %s", interaction.user)
 
 
 def build_bot(settings: Settings) -> Orchestrator:

@@ -58,3 +58,11 @@ class RoleSlotsExhausted(OrchestratorError):
 
 class InvalidTarget(OrchestratorError):
     pass
+
+
+class ProjectBroken(OrchestratorError):
+    def __init__(self):
+        super().__init__(
+            "This project's Discord category or roles are missing. An admin can repair it with "
+            "`/orchestrator repair`."
+        )
