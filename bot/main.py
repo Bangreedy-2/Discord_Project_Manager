@@ -76,6 +76,15 @@ class Orchestrator(commands.Bot):
         self, interaction: discord.Interaction, error: app_commands.AppCommandError
     ) -> None:
         original = getattr(error, "original", error)
+        if isinstance(original, discord.NotFound) and original.code == 10062:
+            # Discord's 3 second reply window passed before we answered; the user already
+            # sees "The application did not respond" and we can no longer reply.
+            age = (discord.utils.utcnow() - interaction.created_at).total_seconds()
+            log.warning(
+                "interaction for /%s expired before the bot replied (%.1f s after it was sent)",
+                interaction.command.qualified_name if interaction.command else "?", age,
+            )
+            return
         if isinstance(original, OrchestratorError):
             message = original.message
         elif isinstance(error, app_commands.CommandOnCooldown):
