@@ -40,6 +40,7 @@ class AdminCog(commands.GroupCog, group_name="orchestrator", description="Server
         max_projects: app_commands.Range[int, 0, 50] | None = None,
         max_channels: app_commands.Range[int, 1, 50] | None = None,
     ) -> None:
+        await interaction.response.defer(ephemeral=True, thinking=True)
         repo = self.bot.repos.settings
         if max_projects is None and max_channels is None:
             s = await repo.get(interaction.guild_id)
@@ -52,7 +53,7 @@ class AdminCog(commands.GroupCog, group_name="orchestrator", description="Server
                 details={"max_projects_per_user": s.max_projects_per_user,
                          "max_channels_per_proj": s.max_channels_per_proj},
             ))
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"{verb} settings: **{s.max_projects_per_user}** projects per user, "
             f"**{s.max_channels_per_proj}** channels per project.",
             ephemeral=True,

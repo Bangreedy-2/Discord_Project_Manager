@@ -35,6 +35,7 @@ class MembersCog(commands.GroupCog, group_name="member", description="Manage pro
         user: discord.Member,
         role: app_commands.Choice[str],
     ) -> None:
+        await interaction.response.defer(ephemeral=True, thinking=True)
         p = await self.bot.services.projects.resolve(interaction.guild_id, project)
         tier = Tier(role.value)
         previous = await self.service.set_tier(interaction.guild, interaction.user, p, user, tier)
@@ -44,7 +45,7 @@ class MembersCog(commands.GroupCog, group_name="member", description="Manage pro
             msg = f"Added {user.mention} to **{p.name}** as {tier.value}."
         else:
             msg = f"{user.mention} is now a {tier.value} of **{p.name}** (was {previous.value})."
-        await interaction.response.send_message(
+        await interaction.followup.send(
             msg, ephemeral=True, allowed_mentions=discord.AllowedMentions.none()
         )
 
@@ -53,9 +54,10 @@ class MembersCog(commands.GroupCog, group_name="member", description="Manage pro
     async def remove(
         self, interaction: discord.Interaction, project: str, user: discord.Member
     ) -> None:
+        await interaction.response.defer(ephemeral=True, thinking=True)
         p = await self.bot.services.projects.resolve(interaction.guild_id, project)
         await self.service.remove(interaction.guild, interaction.user, p, user)
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"Removed {user.mention} from **{p.name}**.",
             ephemeral=True, allowed_mentions=discord.AllowedMentions.none(),
         )

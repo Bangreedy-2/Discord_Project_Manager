@@ -38,9 +38,9 @@ class ChannelsCog(commands.GroupCog, group_name="channel", description="Manage p
         name: str,
         type: app_commands.Choice[str] | None = None,
     ) -> None:
+        await interaction.response.defer(ephemeral=True, thinking=True)
         p = await self.bot.services.projects.resolve(interaction.guild_id, project)
         kind = ChannelKind(type.value) if type else ChannelKind.TEXT
-        await interaction.response.defer(ephemeral=True)
         channel = await self.service.create(interaction.guild, interaction.user, p, name, kind)
         await interaction.followup.send(f"Created {channel.mention} in **{p.name}**.", ephemeral=True)
 
@@ -48,8 +48,9 @@ class ChannelsCog(commands.GroupCog, group_name="channel", description="Manage p
     async def rename(
         self, interaction: discord.Interaction, channel: ProjectChannelArg, name: str
     ) -> None:
+        await interaction.response.defer(ephemeral=True, thinking=True)
         await self.service.rename(channel, interaction.user, name)
-        await interaction.response.send_message(f"Renamed to {channel.mention}.", ephemeral=True)
+        await interaction.followup.send(f"Renamed to {channel.mention}.", ephemeral=True)
 
     @app_commands.command(name="topic", description="Set a project channel's topic")
     async def topic(
@@ -58,13 +59,15 @@ class ChannelsCog(commands.GroupCog, group_name="channel", description="Manage p
         channel: discord.TextChannel | discord.ForumChannel,
         text: str,
     ) -> None:
+        await interaction.response.defer(ephemeral=True, thinking=True)
         await self.service.topic(channel, interaction.user, text)
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"Updated the topic of {channel.mention}.", ephemeral=True
         )
 
     @app_commands.command(name="delete", description="Delete a project channel")
     async def delete(self, interaction: discord.Interaction, channel: ProjectChannelArg) -> None:
+        await interaction.response.defer(ephemeral=True, thinking=True)
         # Run the ownership checks before asking for confirmation.
         await self.service._project_for(channel, interaction.user)
         ok = await confirm(
@@ -84,12 +87,13 @@ class ChannelsCog(commands.GroupCog, group_name="channel", description="Manage p
     async def visibility(
         self, interaction: discord.Interaction, channel: ProjectChannelArg, public: bool
     ) -> None:
+        await interaction.response.defer(ephemeral=True, thinking=True)
         await self.service.set_visibility(channel, interaction.user, public)
         state = (
             "public: everyone can read it, only project members can post"
             if public else "private: only project members can see it"
         )
-        await interaction.response.send_message(f"{channel.mention} is now {state}.", ephemeral=True)
+        await interaction.followup.send(f"{channel.mention} is now {state}.", ephemeral=True)
 
 
 async def setup(bot: "Orchestrator") -> None:

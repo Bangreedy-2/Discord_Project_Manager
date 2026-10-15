@@ -42,6 +42,7 @@ class ProjectsCog(commands.GroupCog, group_name="project", description="Manage p
     @app_commands.command(name="delete", description="Delete a project and all its channels")
     @app_commands.autocomplete(project=owned_projects)
     async def delete(self, interaction: discord.Interaction, project: str) -> None:
+        await interaction.response.defer(ephemeral=True, thinking=True)
         p = await self.service.resolve(interaction.guild_id, project)
         authz.require_creator_or_admin(p, interaction.user)
         ok = await confirm(
@@ -58,6 +59,7 @@ class ProjectsCog(commands.GroupCog, group_name="project", description="Manage p
     @app_commands.command(name="info", description="Show a project's people and channels")
     @app_commands.autocomplete(project=all_projects)
     async def info(self, interaction: discord.Interaction, project: str) -> None:
+        await interaction.response.defer(ephemeral=True, thinking=True)
         p = await self.service.resolve(interaction.guild_id, project)
         info = await self.service.info(interaction.guild, p)
         embed = discord.Embed(title=p.name, colour=discord.Colour.blurple())
@@ -72,10 +74,11 @@ class ProjectsCog(commands.GroupCog, group_name="project", description="Manage p
             for row, ch in info.channels
         ]
         embed.add_field(name="Channels", value="\n".join(lines) or "—", inline=False)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
     @app_commands.command(name="list", description="List your projects and all active projects")
     async def list_(self, interaction: discord.Interaction) -> None:
+        await interaction.response.defer(ephemeral=True, thinking=True)
         guild = interaction.guild
         everything = await self.bot.repos.projects.list_for_guild(guild.id)
         settings = await self.bot.repos.settings.get(guild.id)
@@ -102,7 +105,7 @@ class ProjectsCog(commands.GroupCog, group_name="project", description="Manage p
             text=f"You've created {cap} · "
             f"server has room for {remaining_project_slots(guild)} more projects"
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
 
 async def setup(bot: "Orchestrator") -> None:
