@@ -9,6 +9,7 @@ from bot.config import Settings, load_settings
 from bot.db.pool import create_pool
 from bot.db.repos import Repos
 from bot.errors import OrchestratorError
+from bot.logging_setup import setup_logging
 from bot.services.container import Services
 
 log = logging.getLogger("orchestrator")
@@ -18,6 +19,7 @@ EXTENSIONS = (
     "bot.cogs.channels",
     "bot.cogs.members",
     "bot.cogs.events",
+    "bot.cogs.admin",
 )
 
 
@@ -57,6 +59,15 @@ class Orchestrator(commands.Bot):
         else:
             synced = await self.tree.sync()
             log.info("synced %d global commands", len(synced))
+
+    async def on_app_command_completion(
+        self, interaction: discord.Interaction, command: app_commands.Command
+    ) -> None:
+        log.info(
+            "command completed",
+            extra={"command": command.qualified_name, "user_id": interaction.user.id,
+                   "guild_id": interaction.guild_id},
+        )
 
     async def on_ready(self) -> None:
         log.info("logged in as %s (%s)", self.user, self.user.id if self.user else "?")
@@ -108,10 +119,7 @@ def build_bot(settings: Settings) -> Orchestrator:
 
 def main() -> None:
     settings = load_settings()
-    logging.basicConfig(
-        level=settings.log_level,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
+    setup_logging(settings.log_level, settings.log_json)
     bot = build_bot(settings)
     bot.run(settings.discord_token, log_handler=None)
 

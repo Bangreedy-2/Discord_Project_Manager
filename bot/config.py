@@ -10,6 +10,7 @@ class Settings:
     database_url: str
     dev_guild_id: int | None
     log_level: str = "INFO"
+    log_json: bool = False
 
 
 def load_settings() -> Settings:
@@ -26,4 +27,5 @@ def load_settings() -> Settings:
         database_url=db_url,
         dev_guild_id=int(guild) if guild else None,
         log_level=os.environ.get("LOG_LEVEL", "INFO").upper(),
+        log_json=os.environ.get("LOG_FORMAT", "").lower() == "json",
     )
