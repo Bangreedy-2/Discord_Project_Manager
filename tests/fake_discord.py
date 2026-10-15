@@ -11,6 +11,7 @@ import discord
 from bot.domain.models import ChannelKind
 
 _ids = itertools.count(1000)
+_MISSING = object()
 
 
 class Boom(Exception):
@@ -73,11 +74,16 @@ class Channel:
             raise discord.NotFound(_resp(404), "Unknown Channel")
         self.guild.channels.remove(self)
 
-    async def edit(self, *, name=None, topic=None, sync_permissions=False, reason=None):
+    async def edit(self, *, name=None, topic=None, sync_permissions=False, category=_MISSING,
+                   overwrites=None, reason=None):
         if name is not None:
             self.name = name
         if topic is not None:
             self.topic = topic
+        if category is not _MISSING:
+            self.category_id = category.id if category else None
+        if overwrites is not None:
+            self.overwrites = dict(overwrites)
         if sync_permissions and self.category:
             self.overwrites = dict(self.category.overwrites)
             self.synced = True

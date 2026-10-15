@@ -17,6 +17,7 @@ EXTENSIONS = (
     "bot.cogs.projects",
     "bot.cogs.channels",
     "bot.cogs.members",
+    "bot.cogs.events",
 )
 
 
