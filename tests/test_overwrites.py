@@ -51,7 +51,9 @@ def test_viewer_is_read_only(setup):
 def test_bot_keeps_management_rights(setup):
     guild, *_, ow = setup
     b = ow[guild.me]
-    assert b.view_channel and b.manage_channels and b.manage_roles
+    assert b.view_channel and b.manage_channels
+    # Allowing manage_roles in an overwrite requires Administrator, so Discord rejects it.
+    assert b.manage_roles is None
 
 
 def test_no_project_role_gets_management_permissions(setup):

@@ -44,10 +44,12 @@ def viewer_overwrite() -> discord.PermissionOverwrite:
 
 
 def bot_overwrite() -> discord.PermissionOverwrite:
+    # No manage_roles: Discord only lets an Administrator allow it in an overwrite.
+    # The bot's guild-level Manage Roles already covers editing these overwrites.
     return P(
         view_channel=True, read_message_history=True, send_messages=True,
         manage_messages=True, connect=True,
-        manage_channels=True, manage_roles=True,
+        manage_channels=True,
     )
 
 
