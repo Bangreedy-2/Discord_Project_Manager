@@ -8,7 +8,7 @@ A Discord bot that turns one server into a project-management community. Any mem
 
 | Command | Who | What it does |
 | --- | --- | --- |
-| `/project create name` | anyone | Creates the category, roles and a `#general` channel (60 s cooldown, 3 per user) |
+| `/project create name` | anyone | Creates the category, roles and the default channels: `#general`, `#resources`, `#public-info` (public) and the `Meeting Room` voice channel (60 s cooldown, 3 per user) |
 | `/project delete project` | creator or admin | Deletes the category, every channel in it and the roles, after confirmation |
 | `/project info project` | anyone | Owners, members, viewers and channels |
 | `/project list` | anyone | Your projects, all active ones, and your remaining quota |
@@ -101,6 +101,6 @@ tests/
 
 ## Behaviour notes
 
-- Project creation is a saga: reserve a row, create roles, category and `#general`, give the creator the Owner role, then activate. Any failure rolls back what was created.
+- Project creation is a saga: reserve a row, create roles, category and the default channels, give the creator the Owner role, then activate. Any failure rolls back what was created.
 - The bot listens for hand edits. A deleted project role or category is recreated, channels created by hand inside a project category are tracked, and deleted channels are untracked. On startup every project is checked; reservations stuck in `pending` for 10 minutes are cleaned up.
 - Decisions on the plan's open questions, all easy to change: only the creator or an admin can delete a project; the cap slot stays with the creator; public channels are read-only for non-members (`public_can_post` exists in the schema for later); there is no archive state yet.

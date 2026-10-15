@@ -18,6 +18,14 @@ log = logging.getLogger(__name__)
 MAX_GUILD_ROLES = 250
 ROLES_PER_PROJECT = 3
 
+# Channels every new project starts with: (name, kind, public).
+DEFAULT_CHANNELS: list[tuple[str, ChannelKind, bool]] = [
+    ("general", ChannelKind.TEXT, False),
+    ("resources", ChannelKind.TEXT, False),
+    ("public-info", ChannelKind.TEXT, True),
+    ("Meeting Room", ChannelKind.VOICE, False),
+]
+
 
 def remaining_project_slots(guild: Any) -> int:
     return max(0, (MAX_GUILD_ROLES - len(guild.roles)) // ROLES_PER_PROJECT)
@@ -82,9 +90,20 @@ class ProjectService:
             )
             created.append(category)
 
-            general = await category.create_text_channel("general", reason=reason)
-            created.append(general)
-            await self.repos.channels.add(general.id, project_id, ChannelKind.TEXT, actor.id)
+            for channel_name, kind, public in DEFAULT_CHANNELS:
+                if kind is ChannelKind.VOICE:
+                    channel = await category.create_voice_channel(channel_name, reason=reason)
+                else:
+                    channel = await category.create_text_channel(channel_name, reason=reason)
+                created.append(channel)
+                await self.repos.channels.add(channel.id, project_id, kind, actor.id)
+                if public:
+                    await channel.set_permissions(
+                        guild.default_role,
+                        overwrite=overwrites.public_everyone_overwrite(),
+                        reason=reason,
+                    )
+                    await self.repos.channels.set_public(channel.id, True)
 
             await actor.add_roles(roles[Tier.OWNER], reason=reason)
 

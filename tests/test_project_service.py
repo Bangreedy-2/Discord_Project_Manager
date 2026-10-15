@@ -1,6 +1,6 @@
 import pytest
 
-from bot.domain.models import ProjectStatus
+from bot.domain.models import ChannelKind, ProjectStatus
 from bot.errors import CapReached, DuplicateName, NotCreator, RoleSlotsExhausted
 from bot.services.project_service import ProjectService
 from tests.fake_discord import Boom, Guild, Role
@@ -25,9 +25,21 @@ async def test_create_builds_everything(env):
     category = guild.get_channel(p.category_id)
     assert category.name == "Apollo"
     assert category.overwrites[guild.default_role].view_channel is False
-    general = [c for c in category.channels]
-    assert [c.name for c in general] == ["general"]
-    assert await repos.channels.get(general[0].id) is not None
+    channels = category.channels
+    assert [(c.name, c.kind) for c in channels] == [
+        ("general", ChannelKind.TEXT),
+        ("resources", ChannelKind.TEXT),
+        ("public-info", ChannelKind.TEXT),
+        ("Meeting Room", ChannelKind.VOICE),
+    ]
+    for c in channels:
+        row = await repos.channels.get(c.id)
+        assert row is not None and row.is_public is (c.name == "public-info")
+    public = channels[2]
+    assert public.overwrites[guild.default_role].view_channel is True
+    assert public.overwrites[guild.default_role].send_messages is False
+    for c in (channels[0], channels[1], channels[3]):
+        assert c.overwrites[guild.default_role].view_channel is False
     assert guild.get_role(p.owner_role_id) in alice.roles
     assert repos.audit.actions == ["project.create"]
 
@@ -108,4 +120,4 @@ async def test_list_owned(env):
     admin = guild.add_member(12, admin=True)
     assert [p.name for p in await svc.list_owned(guild, admin)] == ["A", "B"]
     info = await svc.info(guild, a)
-    assert info.owners == [alice] and info.members == [] and len(info.channels) == 1
+    assert info.owners == [alice] and info.members == [] and len(info.channels) == 4

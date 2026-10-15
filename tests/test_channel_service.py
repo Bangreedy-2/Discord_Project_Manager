@@ -38,8 +38,9 @@ async def test_non_owner_cannot_create(env):
 
 async def test_channel_cap(env):
     repos, guild, svc, alice, p = env
-    await repos.settings.update(guild.id, max_channels_per_proj=2)
-    await svc.create(guild, alice, p, "second", ChannelKind.TEXT)
+    # The project starts with its 4 default channels.
+    await repos.settings.update(guild.id, max_channels_per_proj=5)
+    await svc.create(guild, alice, p, "fifth", ChannelKind.TEXT)
     with pytest.raises(ChannelCapReached):
         await svc.create(guild, alice, p, "third", ChannelKind.TEXT)
 
