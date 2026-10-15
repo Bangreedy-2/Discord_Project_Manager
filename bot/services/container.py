@@ -1,13 +1,22 @@
 from dataclasses import dataclass
 
 from bot.db.repos import Repos
+from bot.services.channel_service import ChannelService
+from bot.services.member_service import MemberService
 from bot.services.project_service import ProjectService
 
 
 @dataclass
 class Services:
     projects: ProjectService
+    channels: ChannelService
+    members: MemberService
 
     @classmethod
     def build(cls, repos: Repos) -> "Services":
-        return cls(projects=ProjectService(repos))
+        projects = ProjectService(repos)
+        return cls(
+            projects=projects,
+            channels=ChannelService(repos, projects),
+            members=MemberService(repos),
+        )
