@@ -1,10 +1,12 @@
 import logging
 
+import asyncpg
 import discord
-from discord import app_commands
 from discord.ext import commands
 
 from bot.config import Settings, load_settings
+from bot.db.pool import create_pool
+from bot.db.repos import Repos
 
 log = logging.getLogger("orchestrator")
 
@@ -14,9 +16,19 @@ class Orchestrator(commands.Bot):
         intents = discord.Intents.default()
         super().__init__(command_prefix=commands.when_mentioned, intents=intents)
         self.settings = settings
+        self.pool: asyncpg.Pool | None = None
+        self.repos: Repos | None = None
 
     async def setup_hook(self) -> None:
+        self.pool = await create_pool(self.settings.database_url)
+        self.repos = Repos.from_pool(self.pool)
+        log.info("database pool ready")
         await self._sync_commands()
+
+    async def close(self) -> None:
+        await super().close()
+        if self.pool is not None:
+            await self.pool.close()
 
     async def _sync_commands(self) -> None:
         if self.settings.dev_guild_id:
